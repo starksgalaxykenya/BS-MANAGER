@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProManage | Complete Business Management System</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- EmailJS for sending emails -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --dark: #2b2d42;
+            --light: #f8f9fa;
+        }
+        
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                height: 100vh;
+                z-index: 50;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .overlay.active {
+                display: block;
+            }
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .badge-warning {
+            background-color: #f59e0b;
+            color: white;
+        }
+        
+        .badge-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .receipt {
+            background-color: white;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            max-width: 400px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .data-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-active {
+            background-color: #10b981;
+        }
+        
+        .status-inactive {
+            background-color: #ef4444;
+        }
+        
+        .print-only {
+            display: none;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Firebase Configuration -->
+    <script>
+        // Initialize Firebase with your configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBORBswvSauHGag4Zkp4f_If3Rx9zNiagU",
+  authDomain: "carskenyaapp.firebaseapp.com",
+  projectId: "carskenyaapp",
+  storageBucket: "carskenyaapp.firebasestorage.app",
+  messagingSenderId: "80734328",
+  appId: "1:80734328:web:2b4fbe06dabb73dad7258d",
+  measurementId: "G-8YYTLJVJK7"
+};
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize services
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+        
+        // Initialize EmailJS
+        emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+        
+        // Application state
+        const appState = {
+            currentUser: null,
+            currentTab: 'dashboard',
+            cart: [],
+            currentSale: null,
+            filters: {
+                products: {
+                    search: '',
+                    category: '',
+                    status: ''
+                }
+            }
+        };
+    </script>
+    
+    <!-- Overlay for mobile -->
+    <div class="overlay fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    
+    <!-- Main container -->
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar w-64 bg-gray-900 text-white flex flex-col z-50">
+            <!-- Logo -->
+            <div class="p-6 border-b border-gray-800">
+                <h1 class="text-2xl font-bold"><i class="fas fa-cube mr-2"></i>ProManage</h1>
+                <p class="text-gray-400 text-sm mt-1" id="userEmail">Loading...</p>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" data-tab="dashboard" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors active">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="products" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-boxes mr-3"></i>
+                            <span>Products</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="services" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-concierge-bell mr-3"></i>
+                            <span>Services</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="sales" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-shopping-cart mr-3"></i>
+                            <span>Sales</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="purchases" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-truck mr-3"></i>
+                            <span>Purchases</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="finance" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-chart-line mr-3"></i>
+                            <span>Finance</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="reports" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-chart-bar mr-3"></i>
+                            <span>Reports</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="customers" class="tab-link flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                            <i class="fas fa-users mr-3"></i>
+                            <span>Customers</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- System Status -->
+                <div class="mt-8 p-4 bg-gray-800 rounded-lg">
+                    <h3 class="font-medium mb-2">System Status</h3>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span class="text-sm" id="systemStatus">Connecting...</span>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- User Profile -->
+            <div class="p-4 border-t border-gray-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                            <span class="font-bold" id="userInitials">?</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="font-medium" id="userName">Loading...</p>
+                            <p class="text-sm text-gray-400">Administrator</p>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button id="sidebarToggle" class="md:hidden mr-4 text-gray-600">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <h2 id="pageTitle" class="text-xl font-semibold text-gray-800">Dashboard</h2>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative" id="notificationContainer">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="globalSearch" placeholder="Search..." class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto p-6" id="mainContent">
+                <!-- Loading screen -->
+                <div id="loadingScreen" class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="loading mx-auto mb-4"></div>
+                        <p class="text-gray-600">Loading application...</p>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-content">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+                        <p class="text-gray-600">Welcome back! Here's your business summary.</p>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="dashboardStats">
+                        <!-- Stats will be loaded dynamically -->
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <div class="card bg-white rounded-xl shadow p-6">
+                            <h3 class="text-lg font-semibold mb-4">Sales Overview</h3>
+                            <div class="h-80">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-white rounded-xl shadow p-6">
+                            <h3 class="text-lg font-semibold mb-4">Stock Levels</h3>
+                            <div class="h-80">
+                                <canvas id="stockChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="card bg-white rounded-xl shadow p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-semibold">Recent Sales</h3>
+                                <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium view-all-sales">View All</a>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Invoice #</th>
+                                            <th>Customer</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentSalesTable">
+                                        <!-- Recent sales will be loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-white rounded-xl shadow p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-semibold">Low Stock Alert</h3>
+                                <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium view-all-products">View All</a>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Current Stock</th>
+                                            <th>Reorder Level</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lowStockTable">
+                                        <!-- Low stock products will be loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Products Tab -->
+                <div id="products" class="tab-content">
+                    <div class="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800">Product Management</h1>
+                            <p class="text-gray-600">Manage your inventory, add new products, and track stock levels</p>
+                        </div>
+                        <button id="addProductBtn" class="btn-primary flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Add Product
+                        </button>
+                    </div>
+                    
+                    <!-- Product Filters -->
+                    <div class="bg-white rounded-xl shadow p-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                                <input type="text" id="productSearch" placeholder="Product name, SKU..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select id="productCategory" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="">All Categories</option>
+                                    <!-- Categories will be loaded dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="productStatus" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="">All Status</option>
+                                    <option value="in_stock">In Stock</option>
+                                    <option value="low_stock">Low Stock</option>
+                                    <option value="out_of_stock">Out of Stock</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="applyFilters" class="btn-primary w-full">Apply Filters</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Products Table -->
+                    <div class="card bg-white rounded-xl shadow overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th>Stock</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTable">
+                                    <!-- Products will be loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-4 border-t border-gray-200 flex justify-between items-center">
+                            <div class="text-sm text-gray-600">Showing <span id="productsCount">0</span> products</div>
+                            <div class="flex space-x-2" id="productsPagination">
+                                <!-- Pagination will be loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sales Tab -->
+                <div id="sales" class="tab-content">
+                    <div class="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800">Sales & Transactions</h1>
+                            <p class="text-gray-600">Process sales, create invoices, and manage transactions</p>
+                        </div>
+                        <button id="newSaleBtn" class="btn-primary flex items-center">
+                            <i class="fas fa-plus mr-2"></i> New Sale
+                        </button>
+                    </div>
+                    
+                    <!-- Sales Summary -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="salesSummary">
+                        <!-- Sales stats will be loaded dynamically -->
+                    </div>
+                    
+                    <!-- Sales Content -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- New Sale Form -->
+                        <div class="lg:col-span-2">
+                            <div class="card bg-white rounded-xl shadow p-6">
+                                <h3 class="text-lg font-semibold mb-4">New Sale</h3>
+                                <div id="saleFormContainer">
+                                    <!-- Sale form will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Transactions -->
+                        <div>
+                            <div class="card bg-white rounded-xl shadow p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-lg font-semibold">Recent Transactions</h3>
+                                    <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium view-all-transactions">View All</a>
+                                </div>
+                                <div class="space-y-4" id="recentTransactions">
+                                    <!-- Recent transactions will be loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other tabs will be loaded similarly -->
+                
+            </main>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <!-- Add Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content w-full max-w-2xl">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold" id="productModalTitle">Add New Product</h3>
+                    <button id="closeProductModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="productForm" enctype="multipart/form-data">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+                            <input type="text" id="productName" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+                            <input type="text" id="productSKU" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                            <select id="productCategoryModal" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <option value="">Select Category</option>
+                                <!-- Categories will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+                            <input type="number" id="productPrice" step="0.01" min="0" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cost Price *</label>
+                            <input type="number" id="productCost" step="0.01" min="0" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity *</label>
+                            <input type="number" id="productStock" min="0" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Reorder Level</label>
+                            <input type="number" id="productReorderLevel" min="0" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                            <input type="file" id="productImage" accept="image/*" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <div class="mt-2" id="productImagePreview"></div>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="productDescription" rows="3" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"></textarea>
+                        </div>
+                    </div>
+                    <input type="hidden" id="productId">
+                    <div class="flex justify-end space-x-4 mt-8">
+                        <button type="button" id="cancelProduct" class="px-6 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                        <button type="submit" id="saveProductBtn" class="btn-primary px-6 py-2">
+                            <span id="saveProductText">Save Product</span>
+                            <div class="loading inline-block ml-2 hidden" id="productSaveLoading"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Receipt</h3>
+                    <button id="closeReceiptModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="receipt" id="receiptContent">
+                    <!-- Receipt content will be generated here -->
+                </div>
+                <div class="flex flex-col space-y-3 mt-6">
+                    <button id="printReceiptBtn" class="btn-primary w-full flex items-center justify-center">
+                        <i class="fas fa-print mr-2"></i> Print Receipt
+                    </button>
+                    <button id="sendWhatsAppBtn" class="w-full py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 flex items-center justify-center">
+                        <i class="fab fa-whatsapp mr-2"></i> Send via WhatsApp
+                    </button>
+                    <button id="sendEmailBtn" class="w-full py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center justify-center">
+                        <i class="fas fa-envelope mr-2"></i> Send via Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal active">
+        <div class="modal-content w-full max-w-md">
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">ProManage Login</h2>
+                    <p class="text-gray-600 mt-2">Sign in to access your business management system</p>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="loginEmail" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="your@email.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="loginPassword" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="••••••••">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="submit" id="loginBtn" class="btn-primary w-full py-3">
+                            <span id="loginText">Sign In</span>
+                            <div class="loading inline-block ml-2 hidden" id="loginLoading"></div>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-gray-600 text-sm">Don't have an account? <button type="button" id="showRegister" class="text-indigo-600 hover:text-indigo-800">Register here</button></p>
+                    </div>
+                </form>
+                
+                <!-- Register Form (hidden by default) -->
+                <form id="registerForm" class="hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" id="registerName" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="registerEmail" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="your@email.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="registerPassword" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="••••••••">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input type="password" id="registerConfirmPassword" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="••••••••">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                            <input type="text" id="registerBusiness" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="My Business Inc.">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="submit" id="registerBtn" class="btn-primary w-full py-3">
+                            <span id="registerText">Create Account</span>
+                            <div class="loading inline-block ml-2 hidden" id="registerLoading"></div>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-gray-600 text-sm">Already have an account? <button type="button" id="showLogin" class="text-indigo-600 hover:text-indigo-800">Sign in here</button></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg hidden z-50 max-w-md">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-400 mr-3" id="toastIcon"></i>
+            <span id="toastMessage">Action completed successfully!</span>
+        </div>
+    </div>
+    
+    <!-- Application JavaScript -->
+    <script>
+        // DOM Elements
+        const elements = {
+            // Sidebar and navigation
+            sidebarToggle: document.getElementById('sidebarToggle'),
+            sidebar: document.querySelector('.sidebar'),
+            overlay: document.querySelector('.overlay'),
+            tabLinks: document.querySelectorAll('.tab-link'),
+            tabContents: document.querySelectorAll('.tab-content'),
+            pageTitle: document.getElementById('pageTitle'),
+            
+            // Main content
+            mainContent: document.getElementById('mainContent'),
+            loadingScreen: document.getElementById('loadingScreen'),
+            
+            // Product management
+            productModal: document.getElementById('productModal'),
+            closeProductModal: document.getElementById('closeProductModal'),
+            cancelProduct: document.getElementById('cancelProduct'),
+            addProductBtn: document.getElementById('addProductBtn'),
+            productsTable: document.getElementById('productsTable'),
+            productForm: document.getElementById('productForm'),
+            productModalTitle: document.getElementById('productModalTitle'),
+            productId: document.getElementById('productId'),
+            saveProductBtn: document.getElementById('saveProductBtn'),
+            saveProductText: document.getElementById('saveProductText'),
+            productSaveLoading: document.getElementById('productSaveLoading'),
+            
+            // Dashboard
+            dashboardStats: document.getElementById('dashboardStats'),
+            recentSalesTable: document.getElementById('recentSalesTable'),
+            lowStockTable: document.getElementById('lowStockTable'),
+            
+            // Sales
+            salesSummary: document.getElementById('salesSummary'),
+            recentTransactions: document.getElementById('recentTransactions'),
+            newSaleBtn: document.getElementById('newSaleBtn'),
+            saleFormContainer: document.getElementById('saleFormContainer'),
+            
+            // Receipt
+            receiptModal: document.getElementById('receiptModal'),
+            closeReceiptModal: document.getElementById('closeReceiptModal'),
+            printReceiptBtn: document.getElementById('printReceiptBtn'),
+            sendWhatsAppBtn: document.getElementById('sendWhatsAppBtn'),
+            sendEmailBtn: document.getElementById('sendEmailBtn'),
+            receiptContent: document.getElementById('receiptContent'),
+            
+            // Authentication
+            loginModal: document.getElementById('loginModal'),
+            loginForm: document.getElementById('loginForm'),
+            registerForm: document.getElementById('registerForm'),
+            showRegister: document.getElementById('showRegister'),
+            showLogin: document.getElementById('showLogin'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            userEmail: document.getElementById('userEmail'),
+            userName: document.getElementById('userName'),
+            userInitials: document.getElementById('userInitials'),
+            
+            // Toast
+            toast: document.getElementById('toast'),
+            toastMessage: document.getElementById('toastMessage'),
+            toastIcon: document.getElementById('toastIcon'),
+            
+            // System status
+            systemStatus: document.getElementById('systemStatus')
+        };
+        
+        // Firebase collections
+        const collections = {
+            users: 'users',
+            products: 'products',
+            sales: 'sales',
+            customers: 'customers',
+            suppliers: 'suppliers',
+            purchases: 'purchases',
+            categories: 'categories',
+            transactions: 'transactions',
+            settings: 'settings'
+        };
+        
+        // Charts
+        let salesChart = null;
+        let stockChart = null;
+        
+        // Initialize the application
+        async function initApp() {
+            try {
+                // Check authentication state
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        // User is signed in
+                        appState.currentUser = user;
+                        await loadUserData(user.uid);
+                        elements.loginModal.classList.remove('active');
+                        elements.loadingScreen.style.display = 'none';
+                        updateUserUI(user);
+                        await initializeData();
+                        setupEventListeners();
+                    } else {
+                        // No user is signed in
+                        elements.loginModal.classList.add('active');
+                        elements.loadingScreen.style.display = 'none';
+                    }
+                });
+                
+                // Update system status
+                elements.systemStatus.textContent = 'Connected';
+                showToast('System connected successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                elements.systemStatus.textContent = 'Connection Failed';
+                showToast('Failed to connect to system. Please refresh.', 'error');
+            }
+        }
+        
+        // Load user data from Firestore
+        async function loadUserData(userId) {
+            try {
+                const userDoc = await db.collection(collections.users).doc(userId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    appState.userData = userData;
+                    return userData;
+                } else {
+                    // Create user document if it doesn't exist
+                    await db.collection(collections.users).doc(userId).set({
+                        email: appState.currentUser.email,
+                        name: appState.currentUser.displayName || appState.currentUser.email.split('@')[0],
+                        businessName: 'My Business',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        settings: {
+                            currency: 'USD',
+                            taxRate: 10,
+                            receiptFooter: 'Thank you for your business!'
+                        }
+                    });
+                    return {};
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                return {};
+            }
+        }
+        
+        // Update user UI
+        function updateUserUI(user) {
+            const displayName = user.displayName || user.email.split('@')[0];
+            const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            
+            elements.userEmail.textContent = user.email;
+            elements.userName.textContent = displayName;
+            elements.userInitials.textContent = initials;
+        }
+        
+        // Initialize data for the app
+        async function initializeData() {
+            try {
+                // Load initial data for dashboard
+                await loadDashboardData();
+                
+                // Set up real-time listeners
+                setupRealtimeListeners();
+                
+                // Load products if on products tab
+                if (appState.currentTab === 'products') {
+                    await loadProducts();
+                }
+                
+                // Load sales if on sales tab
+                if (appState.currentTab === 'sales') {
+                    await loadSalesData();
+                }
+                
+            } catch (error) {
+                console.error('Error initializing data:', error);
+                showToast('Error loading data. Please refresh.', 'error');
+            }
+        }
+        
+        // Set up real-time listeners
+        function setupRealtimeListeners() {
+            // Listen for product changes
+            db.collection(collections.products)
+                .where('userId', '==', appState.currentUser.uid)
+                .onSnapshot((snapshot) => {
+                    if (appState.currentTab === 'dashboard') {
+                        loadDashboardData();
+                    }
+                    if (appState.currentTab === 'products') {
+                        loadProducts();
+                    }
+                });
+            
+            // Listen for sales changes
+            db.collection(collections.sales)
+                .where('userId', '==', appState.currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .onSnapshot((snapshot) => {
+                    if (appState.currentTab === 'dashboard') {
+                        loadDashboardData();
+                    }
+                    if (appState.currentTab === 'sales') {
+                        loadSalesData();
+                    }
+                });
+        }
+        
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Get total products
+                const productsSnapshot = await db.collection(collections.products)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .get();
+                
+                const totalProducts = productsSnapshot.size;
+                const lowStockProducts = productsSnapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.stock <= data.reorderLevel && data.stock > 0;
+                }).length;
+                const outOfStockProducts = productsSnapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.stock === 0;
+                }).length;
+                
+                // Get total sales for today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const salesSnapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .where('createdAt', '>=', today)
+                    .get();
+                
+                let todaySales = 0;
+                salesSnapshot.forEach(doc => {
+                    todaySales += doc.data().totalAmount || 0;
+                });
+                
+                // Get total revenue
+                const allSalesSnapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .get();
+                
+                let totalRevenue = 0;
+                allSalesSnapshot.forEach(doc => {
+                    totalRevenue += doc.data().totalAmount || 0;
+                });
+                
+                // Update dashboard stats
+                elements.dashboardStats.innerHTML = `
+                    <div class="card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Total Revenue</p>
+                                <h3 class="text-2xl font-bold mt-1">$${totalRevenue.toFixed(2)}</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Today's Sales</p>
+                                <h3 class="text-2xl font-bold mt-1">$${todaySales.toFixed(2)}</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Total Products</p>
+                                <h3 class="text-2xl font-bold mt-1">${totalProducts}</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                <i class="fas fa-box text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Low Stock</p>
+                                <h3 class="text-2xl font-bold mt-1">${lowStockProducts + outOfStockProducts}</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Load recent sales
+                await loadRecentSales();
+                
+                // Load low stock products
+                await loadLowStockProducts();
+                
+                // Load charts
+                await loadCharts();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Load recent sales
+        async function loadRecentSales() {
+            try {
+                const snapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .limit(5)
+                    .get();
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const sale = doc.data();
+                    html += `
+                        <tr>
+                            <td class="font-medium">${sale.invoiceNumber || 'N/A'}</td>
+                            <td>${sale.customerName || 'Walk-in Customer'}</td>
+                            <td class="font-medium">$${sale.totalAmount?.toFixed(2) || '0.00'}</td>
+                            <td>
+                                <span class="badge ${sale.paymentStatus === 'paid' ? 'badge-success' : 'badge-warning'}">
+                                    ${sale.paymentStatus || 'pending'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                elements.recentSalesTable.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-gray-500">No recent sales</td></tr>';
+                
+            } catch (error) {
+                console.error('Error loading recent sales:', error);
+            }
+        }
+        
+        // Load low stock products
+        async function loadLowStockProducts() {
+            try {
+                const snapshot = await db.collection(collections.products)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .where('stock', '<=', firebase.firestore.FieldValue.increment(10))
+                    .get();
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const product = doc.data();
+                    const status = product.stock === 0 ? 'Out of Stock' : 
+                                  product.stock <= product.reorderLevel ? 'Low Stock' : 'In Stock';
+                    const badgeClass = product.stock === 0 ? 'badge-danger' : 
+                                      product.stock <= product.reorderLevel ? 'badge-warning' : 'badge-success';
+                    
+                    html += `
+                        <tr>
+                            <td class="font-medium">${product.name}</td>
+                            <td class="${product.stock === 0 ? 'text-red-600' : 'text-yellow-600'} font-medium">${product.stock}</td>
+                            <td>${product.reorderLevel || 10}</td>
+                            <td>
+                                <button class="text-sm text-blue-600 hover:text-blue-800 font-medium reorder-product" data-id="${doc.id}">
+                                    Reorder
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                elements.lowStockTable.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-gray-500">All products are well stocked</td></tr>';
+                
+            } catch (error) {
+                console.error('Error loading low stock products:', error);
+            }
+        }
+        
+        // Load charts
+        async function loadCharts() {
+            try {
+                // Sales chart - last 7 days
+                const last7Days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    last7Days.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                }
+                
+                // Get sales data for last 7 days
+                const salesData = [0, 0, 0, 0, 0, 0, 0];
+                
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                
+                const salesSnapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .where('createdAt', '>=', sevenDaysAgo)
+                    .get();
+                
+                salesSnapshot.forEach(doc => {
+                    const sale = doc.data();
+                    const saleDate = sale.createdAt?.toDate();
+                    if (saleDate) {
+                        const dayIndex = 6 - Math.floor((new Date() - saleDate) / (1000 * 60 * 60 * 24));
+                        if (dayIndex >= 0 && dayIndex < 7) {
+                            salesData[dayIndex] += sale.totalAmount || 0;
+                        }
+                    }
+                });
+                
+                // Create or update sales chart
+                const salesCtx = document.getElementById('salesChart').getContext('2d');
+                if (salesChart) {
+                    salesChart.destroy();
+                }
+                
+                salesChart = new Chart(salesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: last7Days,
+                        datasets: [{
+                            label: 'Sales ($)',
+                            data: salesData,
+                            borderColor: '#4361ee',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Stock chart
+                const stockCtx = document.getElementById('stockChart').getContext('2d');
+                if (stockChart) {
+                    stockChart.destroy();
+                }
+                
+                const productsSnapshot = await db.collection(collections.products)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .limit(5)
+                    .get();
+                
+                const productNames = [];
+                const stockLevels = [];
+                
+                productsSnapshot.forEach(doc => {
+                    const product = doc.data();
+                    productNames.push(product.name.substring(0, 15) + (product.name.length > 15 ? '...' : ''));
+                    stockLevels.push(product.stock);
+                });
+                
+                stockChart = new Chart(stockCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: productNames,
+                        datasets: [{
+                            label: 'Stock Level',
+                            data: stockLevels,
+                            backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                            borderColor: 'rgb(67, 97, 238)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading charts:', error);
+            }
+        }
+        
+        // Load products
+        async function loadProducts() {
+            try {
+                let query = db.collection(collections.products)
+                    .where('userId', '==', appState.currentUser.uid);
+                
+                // Apply filters
+                if (appState.filters.products.search) {
+                    query = query.where('name', '>=', appState.filters.products.search)
+                                 .where('name', '<=', appState.filters.products.search + '\uf8ff');
+                }
+                
+                if (appState.filters.products.category) {
+                    query = query.where('category', '==', appState.filters.products.category);
+                }
+                
+                const snapshot = await query.get();
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const product = doc.data();
+                    const status = product.stock === 0 ? 'Out of Stock' : 
+                                  product.stock <= product.reorderLevel ? 'Low Stock' : 'In Stock';
+                    const badgeClass = product.stock === 0 ? 'badge-danger' : 
+                                      product.stock <= product.reorderLevel ? 'badge-warning' : 'badge-success';
+                    
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center mr-3">
+                                        ${product.imageUrl ? 
+                                            `<img src="${product.imageUrl}" class="w-10 h-10 rounded-lg object-cover">` :
+                                            `<i class="fas fa-box text-gray-600"></i>`
+                                        }
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">${product.name}</p>
+                                        <p class="text-gray-500 text-sm">SKU: ${product.sku || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="capitalize">${product.category || 'Uncategorized'}</td>
+                            <td class="font-medium">$${product.price?.toFixed(2) || '0.00'}</td>
+                            <td class="${product.stock === 0 ? 'text-red-600' : product.stock <= product.reorderLevel ? 'text-yellow-600' : 'text-green-600'} font-medium">
+                                ${product.stock}
+                            </td>
+                            <td>
+                                <span class="badge ${badgeClass}">${status}</span>
+                            </td>
+                            <td>
+                                <div class="flex space-x-2">
+                                    <button class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 edit-product" data-id="${doc.id}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="w-8 h-8 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 delete-product" data-id="${doc.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                elements.productsTable.innerHTML = html || '<tr><td colspan="6" class="text-center py-8 text-gray-500">No products found</td></tr>';
+                document.getElementById('productsCount').textContent = snapshot.size;
+                
+                // Load categories for filter
+                await loadCategories();
+                
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showToast('Error loading products', 'error');
+            }
+        }
+        
+        // Load categories
+        async function loadCategories() {
+            try {
+                const snapshot = await db.collection(collections.categories)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .get();
+                
+                const categorySelect = document.getElementById('productCategory');
+                const categoryModalSelect = document.getElementById('productCategoryModal');
+                
+                let options = '<option value="">All Categories</option>';
+                let modalOptions = '<option value="">Select Category</option>';
+                
+                snapshot.forEach(doc => {
+                    const category = doc.data();
+                    options += `<option value="${category.name}">${category.name}</option>`;
+                    modalOptions += `<option value="${category.name}">${category.name}</option>`;
+                });
+                
+                categorySelect.innerHTML = options;
+                categoryModalSelect.innerHTML = modalOptions;
+                
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+        
+        // Load sales data
+        async function loadSalesData() {
+            try {
+                // Load sales summary
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // Today's sales
+                const todaySalesSnapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .where('createdAt', '>=', today)
+                    .get();
+                
+                let todaySales = 0;
+                todaySalesSnapshot.forEach(doc => {
+                    todaySales += doc.data().totalAmount || 0;
+                });
+                
+                // Total sales count
+                const totalSalesSnapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .get();
+                
+                const totalSales = totalSalesSnapshot.size;
+                
+                // Average sale amount
+                let totalAmount = 0;
+                totalSalesSnapshot.forEach(doc => {
+                    totalAmount += doc.data().totalAmount || 0;
+                });
+                const avgSale = totalSales > 0 ? totalAmount / totalSales : 0;
+                
+                // Update sales summary
+                elements.salesSummary.innerHTML = `
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                                <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Today's Sales</p>
+                                <h3 class="text-2xl font-bold mt-1">$${todaySales.toFixed(2)}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                                <i class="fas fa-receipt text-blue-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Total Transactions</p>
+                                <h3 class="text-2xl font-bold mt-1">${totalSales}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mr-4">
+                                <i class="fas fa-user-check text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Avg. Transaction</p>
+                                <h3 class="text-2xl font-bold mt-1">$${avgSale.toFixed(2)}</h3>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Load recent transactions
+                const recentSnapshot = await db.collection(collections.sales)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .limit(5)
+                    .get();
+                
+                let transactionsHtml = '';
+                recentSnapshot.forEach(doc => {
+                    const sale = doc.data();
+                    const date = sale.createdAt?.toDate();
+                    const formattedDate = date ? date.toLocaleDateString() : 'N/A';
+                    
+                    transactionsHtml += `
+                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="font-medium">${sale.invoiceNumber || 'N/A'}</p>
+                                <p class="text-gray-500 text-sm">${sale.customerName || 'Walk-in Customer'}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium">$${sale.totalAmount?.toFixed(2) || '0.00'}</p>
+                                <p class="text-gray-500 text-sm">${formattedDate}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                elements.recentTransactions.innerHTML = transactionsHtml || '<p class="text-gray-500 text-center py-4">No recent transactions</p>';
+                
+                // Load sale form if not already loaded
+                if (!document.getElementById('cartItems')) {
+                    await loadSaleForm();
+                }
+                
+            } catch (error) {
+                console.error('Error loading sales data:', error);
+                showToast('Error loading sales data', 'error');
+            }
+        }
+        
+        // Load sale form
+        async function loadSaleForm() {
+            try {
+                // Get products for sale
+                const productsSnapshot = await db.collection(collections.products)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .where('stock', '>', 0)
+                    .limit(8)
+                    .get();
+                
+                let productsHtml = '';
+                productsSnapshot.forEach(doc => {
+                    const product = doc.data();
+                    productsHtml += `
+                        <div class="border rounded-lg p-4 hover:border-indigo-500 cursor-pointer product-item" data-product-id="${doc.id}">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h5 class="font-medium">${product.name}</h5>
+                                    <p class="text-gray-500 text-sm">$${product.price?.toFixed(2) || '0.00'}</p>
+                                </div>
+                                <span class="text-sm px-2 py-1 bg-gray-100 rounded">Stock: ${product.stock}</span>
+                            </div>
+                            <button class="mt-3 w-full py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm add-to-cart" data-product-id="${doc.id}" data-product-name="${product.name}" data-product-price="${product.price}">
+                                Add to Cart
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                // Get customers
+                const customersSnapshot = await db.collection(collections.customers)
+                    .where('userId', '==', appState.currentUser.uid)
+                    .limit(10)
+                    .get();
+                
+                let customersOptions = '<option value="">Walk-in Customer</option>';
+                customersSnapshot.forEach(doc => {
+                    const customer = doc.data();
+                    customersOptions += `<option value="${doc.id}">${customer.name}</option>`;
+                });
+                customersOptions += '<option value="new">+ New Customer</option>';
+                
+                elements.saleFormContainer.innerHTML = `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Product Selection -->
+                        <div class="lg:col-span-2">
+                            <div class="mb-6">
+                                <h4 class="font-medium mb-3">Select Products</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="productsGrid">
+                                    ${productsHtml}
+                                </div>
+                            </div>
+                            
+                            <!-- Cart Items -->
+                            <div>
+                                <h4 class="font-medium mb-3">Cart Items</h4>
+                                <div class="border rounded-lg overflow-hidden">
+                                    <div class="bg-gray-50 p-3 border-b">
+                                        <div class="grid grid-cols-12 font-medium text-sm">
+                                            <div class="col-span-6">Item</div>
+                                            <div class="col-span-2 text-center">Qty</div>
+                                            <div class="col-span-2 text-center">Price</div>
+                                            <div class="col-span-2 text-center">Total</div>
+                                        </div>
+                                    </div>
+                                    <div id="cartItems" class="p-3">
+                                        <p class="text-gray-500 text-center py-4">No items in cart</p>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 border-t">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <p class="text-gray-600 text-sm">Subtotal: <span id="cartSubtotal">$0.00</span></p>
+                                                <p class="text-gray-600 text-sm">Tax: <span id="cartTax">$0.00</span></p>
+                                                <p class="font-medium">Total: <span id="cartTotal">$0.00</span></p>
+                                            </div>
+                                            <div class="flex space-x-3">
+                                                <button id="clearCart" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Clear</button>
+                                                <button id="checkoutBtn" class="btn-primary px-6 py-2">Process Sale</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer & Payment -->
+                        <div>
+                            <div class="mb-6">
+                                <h4 class="font-medium mb-3">Customer Information</h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                                        <select id="saleCustomer" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                            ${customersOptions}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                                        <select id="paymentMethod" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                            <option value="cash">Cash</option>
+                                            <option value="card">Credit Card</option>
+                                            <option value="bank">Bank Transfer</option>
+                                            <option value="mobile">Mobile Payment</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+                                        <input type="number" id="taxRate" value="${appState.userData?.settings?.taxRate || 10}" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount ($)</label>
+                                        <input type="number" id="discount" value="0" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                        <textarea id="saleNotes" rows="3" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <div>
+                                <h4 class="font-medium mb-3">Quick Actions</h4>
+                                <div class="space-y-3">
+                                    <button id="createInvoice" class="w-full py-3 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50">
+                                        <i class="fas fa-file-invoice mr-2"></i> Create Invoice
+                                    </button>
+                                    <button id="quickSale" class="w-full py-3 btn-primary">
+                                        <i class="fas fa-bolt mr-2"></i> Quick Sale
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Initialize cart
+                appState.cart = [];
+                updateCartDisplay();
+                
+            } catch (error) {
+                console.error('Error loading sale form:', error);
+                showToast('Error loading sale form', 'error');
+            }
+        }
+        
+        // Update cart display
+        function updateCartDisplay() {
+            const cartItemsContainer = document.getElementById('cartItems');
+            const cartSubtotalElement = document.getElementById('cartSubtotal');
+            const cartTaxElement = document.getElementById('cartTax');
+            const cartTotalElement = document.getElementById('cartTotal');
+            
+            if (!cartItemsContainer) return;
+            
+            if (appState.cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No items in cart</p>';
+                cartSubtotalElement.textContent = '$0.00';
+                cartTaxElement.textContent = '$0.00';
+                cartTotalElement.textContent = '$0.00';
+                return;
+            }
+            
+            let cartHTML = '';
+            let subtotal = 0;
+            
+            appState.cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+                
+                cartHTML += `
+                    <div class="grid grid-cols-12 items-center py-3 border-b">
+                        <div class="col-span-6">
+                            <p class="font-medium">${item.name}</p>
+                            <p class="text-gray-500 text-sm">$${item.price.toFixed(2)} each</p>
+                        </div>
+                        <div class="col-span-2 text-center">
+                            <div class="flex items-center justify-center">
+                                <button class="w-6 h-6 rounded-full bg-gray-200 decrease-qty" data-index="${index}">-</button>
+                                <span class="mx-2">${item.quantity}</span>
+                                <button class="w-6 h-6 rounded-full bg-gray-200 increase-qty" data-index="${index}">+</button>
+                            </div>
+                        </div>
+                        <div class="col-span-2 text-center">$${item.price.toFixed(2)}</div>
+                        <div class="col-span-2 text-center font-medium">$${itemTotal.toFixed(2)}</div>
+                    </div>
+                `;
+            });
+            
+            const taxRate = parseFloat(document.getElementById('taxRate')?.value || 10);
+            const discount = parseFloat(document.getElementById('discount')?.value || 0);
+            const tax = subtotal * (taxRate / 100);
+            const total = subtotal + tax - discount;
+            
+            cartItemsContainer.innerHTML = cartHTML;
+            cartSubtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+            cartTaxElement.textContent = `$${tax.toFixed(2)}`;
+            cartTotalElement.textContent = `$${total.toFixed(2)}`;
+            
+            // Add event listeners to quantity buttons
+            document.querySelectorAll('.increase-qty').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.getAttribute('data-index'));
+                    if (appState.cart[index]) {
+                        appState.cart[index].quantity += 1;
+                        updateCartDisplay();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.decrease-qty').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.getAttribute('data-index'));
+                    
+                    if (appState.cart[index]) {
+                        if (appState.cart[index].quantity > 1) {
+                            appState.cart[index].quantity -= 1;
+                        } else {
+                            appState.cart.splice(index, 1);
+                        }
+                        updateCartDisplay();
+                    }
+                });
+            });
+        }
+        
+        // Process sale
+        async function processSale() {
+            try {
+                if (appState.cart.length === 0) {
+                    showToast('Cart is empty!', 'error');
+                    return;
+                }
+                
+                // Calculate totals
+                let subtotal = 0;
+                appState.cart.forEach(item => {
+                    subtotal += item.price * item.quantity;
+                });
+                
+                const taxRate = parseFloat(document.getElementById('taxRate')?.value || 10);
+                const discount = parseFloat(document.getElementById('discount')?.value || 0);
+                const tax = subtotal * (taxRate / 100);
+                const total = subtotal + tax - discount;
+                
+                // Get customer info
+                const customerSelect = document.getElementById('saleCustomer');
+                const customerId = customerSelect.value;
+                let customerName = 'Walk-in Customer';
+                let customerData = null;
+                
+                if (customerId && customerId !== 'new') {
+                    const customerDoc = await db.collection(collections.customers).doc(customerId).get();
+                    if (customerDoc.exists) {
+                        customerData = customerDoc.data();
+                        customerName = customerData.name;
+                    }
+                }
+                
+                // Generate invoice number
+                const invoiceNumber = `INV-${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}${new Date().getDate().toString().padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+                
+                // Create sale document
+                const saleData = {
+                    userId: appState.currentUser.uid,
+                    invoiceNumber: invoiceNumber,
+                    customerId: customerId === 'new' ? null : customerId,
+                    customerName: customerName,
+                    items: appState.cart.map(item => ({
+                        productId: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        total: item.price * item.quantity
+                    })),
+                    subtotal: subtotal,
+                    taxRate: taxRate,
+                    taxAmount: tax,
+                    discount: discount,
+                    totalAmount: total,
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    paymentStatus: 'paid',
+                    notes: document.getElementById('saleNotes').value || '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Save sale to Firestore
+                const saleRef = await db.collection(collections.sales).add(saleData);
+                
+                // Update product stock levels
+                const batch = db.batch();
+                
+                for (const item of appState.cart) {
+                    const productRef = db.collection(collections.products).doc(item.id);
+                    const productDoc = await productRef.get();
+                    
+                    if (productDoc.exists) {
+                        const productData = productDoc.data();
+                        const newStock = productData.stock - item.quantity;
+                        
+                        batch.update(productRef, {
+                            stock: newStock,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }
+                
+                await batch.commit();
+                
+                // Update customer total purchases if customer exists
+                if (customerId && customerId !== 'new' && customerData) {
+                    await db.collection(collections.customers).doc(customerId).update({
+                        totalPurchases: (customerData.totalPurchases || 0) + total,
+                        lastPurchase: firebase.firestore.FieldValue.serverTimestamp(),
+                        purchaseCount: (customerData.purchaseCount || 0) + 1
+                    });
+                }
+                
+                // Create receipt
+                const receiptData = {
+                    ...saleData,
+                    id: saleRef.id,
+                    date: new Date().toLocaleString()
+                };
+                
+                // Show receipt
+                showReceipt(receiptData);
+                
+                // Clear cart
+                appState.cart = [];
+                updateCartDisplay();
+                
+                // Reset form
+                document.getElementById('discount').value = 0;
+                document.getElementById('saleNotes').value = '';
+                
+                showToast('Sale processed successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error processing sale:', error);
+                showToast('Error processing sale', 'error');
+            }
+        }
+        
+        // Show receipt
+        function showReceipt(saleData) {
+            // Format date
+            const date = saleData.createdAt?.toDate() || new Date();
+            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            
+            // Build receipt HTML
+            let itemsHtml = '';
+            saleData.items.forEach(item => {
+                itemsHtml += `
+                    <div class="flex justify-between mb-1">
+                        <span>${item.name} x ${item.quantity}</span>
+                        <span>$${item.total.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            elements.receiptContent.innerHTML = `
+                <div class="text-center mb-4">
+                    <h2 class="text-xl font-bold">${appState.userData?.businessName || 'My Business'}</h2>
+                    <p class="text-gray-600">Invoice: ${saleData.invoiceNumber}</p>
+                    <p class="text-gray-600">${formattedDate}</p>
+                </div>
+                <div class="border-t border-b border-gray-300 py-4 my-4">
+                    <div class="flex justify-between mb-2">
+                        <span>Customer:</span>
+                        <span class="font-medium">${saleData.customerName}</span>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="flex justify-between font-medium border-b pb-2 mb-2">
+                        <span>Item</span>
+                        <span>Total</span>
+                    </div>
+                    ${itemsHtml}
+                </div>
+                <div class="border-t border-gray-300 pt-4">
+                    <div class="flex justify-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>$${saleData.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Tax (${saleData.taxRate}%):</span>
+                        <span>$${saleData.taxAmount.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Discount:</span>
+                        <span>$${saleData.discount.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-lg">
+                        <span>Total:</span>
+                        <span>$${saleData.totalAmount.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="text-center mt-6 pt-4 border-t border-gray-300">
+                    <p class="text-gray-600">${appState.userData?.settings?.receiptFooter || 'Thank you for your business!'}</p>
+                </div>
+            `;
+            
+            // Store receipt data
+            appState.currentReceipt = saleData;
+            
+            // Show receipt modal
+            elements.receiptModal.classList.add('active');
+        }
+        
+        // Print receipt
+        function printReceipt() {
+            const element = elements.receiptContent;
+            const opt = {
+                margin: 0.5,
+                filename: `receipt-${appState.currentReceipt.invoiceNumber}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+        
+        // Send receipt via WhatsApp
+        function sendWhatsAppReceipt() {
+            const receipt = appState.currentReceipt;
+            const message = `Receipt from ${appState.userData?.businessName || 'My Business'}\n` +
+                           `Invoice: ${receipt.invoiceNumber}\n` +
+                           `Date: ${receipt.date}\n` +
+                           `Customer: ${receipt.customerName}\n` +
+                           `Total: $${receipt.totalAmount.toFixed(2)}\n` +
+                           `Thank you for your business!`;
+            
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+            
+            showToast('WhatsApp message prepared!', 'success');
+        }
+        
+        // Send receipt via Email
+        async function sendEmailReceipt() {
+            try {
+                const receipt = appState.currentReceipt;
+                
+                // Prepare email data
+                const templateParams = {
+                    to_email: appState.currentUser.email,
+                    from_name: appState.userData?.businessName || 'My Business',
+                    to_name: receipt.customerName,
+                    invoice_number: receipt.invoiceNumber,
+                    date: receipt.date,
+                    customer_name: receipt.customerName,
+                    total_amount: `$${receipt.totalAmount.toFixed(2)}`,
+                    business_name: appState.userData?.businessName || 'My Business'
+                };
+                
+                // Send email using EmailJS
+                await emailjs.send(
+                    'YOUR_EMAILJS_SERVICE_ID',
+                    'YOUR_EMAILJS_TEMPLATE_ID',
+                    templateParams
+                );
+                
+                showToast('Receipt sent via email!', 'success');
+                
+            } catch (error) {
+                console.error('Error sending email:', error);
+                showToast('Error sending email', 'error');
+            }
+        }
+        
+        // Add product to cart
+        async function addToCart(productId, productName, productPrice) {
+            // Check if product is already in cart
+            const existingItem = appState.cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                // Get product details from database
+                const productDoc = await db.collection(collections.products).doc(productId).get();
+                if (productDoc.exists) {
+                    const productData = productDoc.data();
+                    
+                    // Check stock availability
+                    if (productData.stock <= 0) {
+                        showToast('Product out of stock!', 'error');
+                        return;
+                    }
+                    
+                    appState.cart.push({
+                        id: productId,
+                        name: productName,
+                        price: productPrice,
+                        quantity: 1
+                    });
+                }
+            }
+            
+            updateCartDisplay();
+            showToast('Product added to cart!', 'success');
+        }
+        
+        // Save product
+        async function saveProduct(formData) {
+            try {
+                const productId = elements.productId.value;
+                const productData = {
+                    name: formData.get('name'),
+                    sku: formData.get('sku'),
+                    category: formData.get('category'),
+                    price: parseFloat(formData.get('price')),
+                    cost: parseFloat(formData.get('cost')),
+                    stock: parseInt(formData.get('stock')),
+                    reorderLevel: parseInt(formData.get('reorderLevel')) || 10,
+                    description: formData.get('description'),
+                    userId: appState.currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Handle image upload if present
+                const imageFile = document.getElementById('productImage').files[0];
+                if (imageFile) {
+                    // Upload image to Firebase Storage
+                    const storageRef = storage.ref();
+                    const imageRef = storageRef.child(`products/${appState.currentUser.uid}/${Date.now()}_${imageFile.name}`);
+                    const snapshot = await imageRef.put(imageFile);
+                    const imageUrl = await snapshot.ref.getDownloadURL();
+                    productData.imageUrl = imageUrl;
+                }
+                
+                if (productId) {
+                    // Update existing product
+                    await db.collection(collections.products).doc(productId).update(productData);
+                    showToast('Product updated successfully!', 'success');
+                } else {
+                    // Add new product
+                    productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection(collections.products).add(productData);
+                    showToast('Product added successfully!', 'success');
+                }
+                
+                // Close modal and refresh products
+                elements.productModal.classList.remove('active');
+                await loadProducts();
+                
+            } catch (error) {
+                console.error('Error saving product:', error);
+                showToast('Error saving product', 'error');
+            }
+        }
+        
+        // Edit product
+        async function editProduct(productId) {
+            try {
+                const productDoc = await db.collection(collections.products).doc(productId).get();
+                if (productDoc.exists) {
+                    const product = productDoc.data();
+                    
+                    // Fill form with product data
+                    document.getElementById('productName').value = product.name;
+                    document.getElementById('productSKU').value = product.sku;
+                    document.getElementById('productPrice').value = product.price;
+                    document.getElementById('productCost').value = product.cost;
+                    document.getElementById('productStock').value = product.stock;
+                    document.getElementById('productReorderLevel').value = product.reorderLevel || 10;
+                    document.getElementById('productDescription').value = product.description || '';
+                    elements.productId.value = productId;
+                    
+                    // Set category
+                    const categorySelect = document.getElementById('productCategoryModal');
+                    categorySelect.value = product.category || '';
+                    
+                    // Show image preview if exists
+                    const imagePreview = document.getElementById('productImagePreview');
+                    if (product.imageUrl) {
+                        imagePreview.innerHTML = `
+                            <p class="text-sm text-gray-600 mb-2">Current Image:</p>
+                            <img src="${product.imageUrl}" class="w-20 h-20 object-cover rounded-lg">
+                        `;
+                    }
+                    
+                    // Update modal title
+                    elements.productModalTitle.textContent = 'Edit Product';
+                    
+                    // Show modal
+                    elements.productModal.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading product:', error);
+                showToast('Error loading product', 'error');
+            }
+        }
+        
+        // Delete product
+        async function deleteProduct(productId) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                try {
+                    await db.collection(collections.products).doc(productId).delete();
+                    showToast('Product deleted successfully!', 'success');
+                    await loadProducts();
+                } catch (error) {
+                    console.error('Error deleting product:', error);
+                    showToast('Error deleting product', 'error');
+                }
+            }
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            // Set icon based on type
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            const colors = {
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                info: 'text-blue-400'
+            };
+            
+            elements.toastIcon.className = `fas ${icons[type] || icons.info} ${colors[type] || colors.info} mr-3`;
+            elements.toastMessage.textContent = message;
+            
+            elements.toast.classList.remove('hidden');
+            elements.toast.classList.add('flex');
+            
+            setTimeout(() => {
+                elements.toast.classList.remove('flex');
+                elements.toast.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            // Sidebar toggle
+            elements.sidebarToggle.addEventListener('click', () => {
+                elements.sidebar.classList.toggle('active');
+                elements.overlay.classList.toggle('hidden');
+            });
+            
+            elements.overlay.addEventListener('click', () => {
+                elements.sidebar.classList.remove('active');
+                elements.overlay.classList.add('hidden');
+            });
+            
+            // Tab navigation
+            elements.tabLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tabId = link.getAttribute('data-tab');
+                    switchTab(tabId);
+                    
+                    // Update active states
+                    elements.tabLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Close sidebar on mobile
+                    if (window.innerWidth <= 768) {
+                        elements.sidebar.classList.remove('active');
+                        elements.overlay.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Logout
+            elements.logoutBtn.addEventListener('click', async () => {
+                try {
+                    await auth.signOut();
+                    elements.loginModal.classList.add('active');
+                    showToast('Logged out successfully', 'success');
+                } catch (error) {
+                    console.error('Error logging out:', error);
+                    showToast('Error logging out', 'error');
+                }
+            });
+            
+            // Product modal
+            elements.addProductBtn.addEventListener('click', () => {
+                elements.productModalTitle.textContent = 'Add New Product';
+                elements.productForm.reset();
+                elements.productId.value = '';
+                document.getElementById('productImagePreview').innerHTML = '';
+                elements.productModal.classList.add('active');
+            });
+            
+            elements.closeProductModal.addEventListener('click', () => {
+                elements.productModal.classList.remove('active');
+            });
+            
+            elements.cancelProduct.addEventListener('click', () => {
+                elements.productModal.classList.remove('active');
+            });
+            
+            // Product form submission
+            elements.productForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Show loading state
+                elements.saveProductText.textContent = 'Saving...';
+                elements.productSaveLoading.classList.remove('hidden');
+                elements.saveProductBtn.disabled = true;
+                
+                try {
+                    const formData = new FormData(elements.productForm);
+                    await saveProduct(formData);
+                } finally {
+                    // Reset button state
+                    elements.saveProductText.textContent = 'Save Product';
+                    elements.productSaveLoading.classList.add('hidden');
+                    elements.saveProductBtn.disabled = false;
+                }
+            });
+            
+            // Product image preview
+            document.getElementById('productImage')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imagePreview = document.getElementById('productImagePreview');
+                        imagePreview.innerHTML = `
+                            <p class="text-sm text-gray-600 mb-2">Image Preview:</p>
+                            <img src="${e.target.result}" class="w-20 h-20 object-cover rounded-lg">
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Apply product filters
+            document.getElementById('applyFilters')?.addEventListener('click', () => {
+                appState.filters.products.search = document.getElementById('productSearch').value;
+                appState.filters.products.category = document.getElementById('productCategory').value;
+                appState.filters.products.status = document.getElementById('productStatus').value;
+                loadProducts();
+            });
+            
+            // Product search real-time
+            document.getElementById('productSearch')?.addEventListener('input', debounce(() => {
+                appState.filters.products.search = document.getElementById('productSearch').value;
+                loadProducts();
+            }, 500));
+            
+            // Product status filter
+            document.getElementById('productStatus')?.addEventListener('change', () => {
+                appState.filters.products.status = document.getElementById('productStatus').value;
+                loadProducts();
+            });
+            
+            // Product category filter
+            document.getElementById('productCategory')?.addEventListener('change', () => {
+                appState.filters.products.category = document.getElementById('productCategory').value;
+                loadProducts();
+            });
+            
+            // New sale button
+            elements.newSaleBtn.addEventListener('click', () => {
+                switchTab('sales');
+            });
+            
+            // Checkout button
+            document.addEventListener('click', (e) => {
+                if (e.target.id === 'checkoutBtn') {
+                    processSale();
+                }
+                
+                // Add to cart buttons
+                if (e.target.classList.contains('add-to-cart')) {
+                    const productId = e.target.getAttribute('data-product-id');
+                    const productName = e.target.getAttribute('data-product-name');
+                    const productPrice = parseFloat(e.target.getAttribute('data-product-price'));
+                    addToCart(productId, productName, productPrice);
+                }
+                
+                // Clear cart button
+                if (e.target.id === 'clearCart') {
+                    appState.cart = [];
+                    updateCartDisplay();
+                    showToast('Cart cleared', 'info');
+                }
+                
+                // Edit product button
+                if (e.target.closest('.edit-product')) {
+                    const productId = e.target.closest('.edit-product').getAttribute('data-id');
+                    editProduct(productId);
+                }
+                
+                // Delete product button
+                if (e.target.closest('.delete-product')) {
+                    const productId = e.target.closest('.delete-product').getAttribute('data-id');
+                    deleteProduct(productId);
+                }
+            });
+            
+            // Receipt modal
+            elements.closeReceiptModal.addEventListener('click', () => {
+                elements.receiptModal.classList.remove('active');
+            });
+            
+            // Print receipt
+            elements.printReceiptBtn.addEventListener('click', printReceipt);
+            
+            // Send receipt via WhatsApp
+            elements.sendWhatsAppBtn.addEventListener('click', sendWhatsAppReceipt);
+            
+            // Send receipt via Email
+            elements.sendEmailBtn.addEventListener('click', sendEmailReceipt);
+            
+            // Login form
+            elements.loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                // Show loading state
+                document.getElementById('loginText').textContent = 'Signing in...';
+                document.getElementById('loginLoading').classList.remove('hidden');
+                document.getElementById('loginBtn').disabled = true;
+                
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showToast('Logged in successfully!', 'success');
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showToast('Login failed: ' + error.message, 'error');
+                } finally {
+                    // Reset button state
+                    document.getElementById('loginText').textContent = 'Sign In';
+                    document.getElementById('loginLoading').classList.add('hidden');
+                    document.getElementById('loginBtn').disabled = false;
+                }
+            });
+            
+            // Register form
+            elements.registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                const businessName = document.getElementById('registerBusiness').value;
+                
+                if (password !== confirmPassword) {
+                    showToast('Passwords do not match', 'error');
+                    return;
+                }
+                
+                // Show loading state
+                document.getElementById('registerText').textContent = 'Creating account...';
+                document.getElementById('registerLoading').classList.remove('hidden');
+                document.getElementById('registerBtn').disabled = true;
+                
+                try {
+                    // Create user
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    // Update profile
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    
+                    // Create user document
+                    await db.collection(collections.users).doc(userCredential.user.uid).set({
+                        name: name,
+                        email: email,
+                        businessName: businessName,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        settings: {
+                            currency: 'USD',
+                            taxRate: 10,
+                            receiptFooter: 'Thank you for your business!'
+                        }
+                    });
+                    
+                    showToast('Account created successfully!', 'success');
+                    
+                    // Switch back to login form
+                    elements.showLogin.click();
+                    
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    showToast('Registration failed: ' + error.message, 'error');
+                } finally {
+                    // Reset button state
+                    document.getElementById('registerText').textContent = 'Create Account';
+                    document.getElementById('registerLoading').classList.add('hidden');
+                    document.getElementById('registerBtn').disabled = false;
+                }
+            });
+            
+            // Toggle between login and register forms
+            elements.showRegister.addEventListener('click', () => {
+                elements.loginForm.classList.add('hidden');
+                elements.registerForm.classList.remove('hidden');
+            });
+            
+            elements.showLogin.addEventListener('click', () => {
+                elements.registerForm.classList.add('hidden');
+                elements.loginForm.classList.remove('hidden');
+            });
+            
+            // Tax rate and discount changes
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'taxRate' || e.target.id === 'discount') {
+                    updateCartDisplay();
+                }
+            });
+        }
+        
+        // Switch tab
+        async function switchTab(tabId) {
+            // Hide all tab contents
+            elements.tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show the selected tab content
+            const selectedTab = document.getElementById(tabId);
+            selectedTab.classList.add('active');
+            
+            // Update page title
+            const tabNames = {
+                dashboard: 'Dashboard',
+                products: 'Product Management',
+                services: 'Service Management',
+                sales: 'Sales & Transactions',
+                purchases: 'Purchases & Suppliers',
+                finance: 'Finance Management',
+                reports: 'Reports & Analytics',
+                customers: 'Customer Management'
+            };
+            
+            elements.pageTitle.textContent = tabNames[tabId] || 'Dashboard';
+            appState.currentTab = tabId;
+            
+            // Load tab-specific data
+            switch (tabId) {
+                case 'dashboard':
+                    await loadDashboardData();
+                    break;
+                case 'products':
+                    await loadProducts();
+                    break;
+                case 'sales':
+                    await loadSalesData();
+                    break;
+                // Add cases for other tabs as needed
+            }
+        }
+        
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
